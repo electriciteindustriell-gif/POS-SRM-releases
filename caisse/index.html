@@ -137,7 +137,7 @@
       <div id="noData" class="card empty hidden" data-i="noData"></div>
       <div id="todayBox" class="hidden">
         <div class="hero">
-          <div class="lbl" data-i="salesToday"></div>
+          <div class="lbl"><span data-i="salesToday"></span> <span id="kDate"></span></div>
           <div class="big" id="kTotal">0</div>
           <div class="row">
             <span class="pill" id="kCount"></span>
@@ -286,13 +286,15 @@ function render() {
   $('shopName').textContent = s?.shop?.name || tr('appName');
   const today = s?.today;
   // ملخص ديال نهار آخر (الحاسوب ما صيفطش من البارح): ما نبيّنوش أرقام قديمة كأنها ديال اليوم
-  const fresh = today && today.date === localDayKey();
+  const upd = toDate(s?.updatedAt);
+  const fresh = today && (today.date === localDayKey() || (upd && Date.now() - upd.getTime() < 12 * 3600_000));
   $('noData').classList.toggle('hidden', !!fresh);
   $('noData').textContent = denied ? tr('denied') : tr('noData');
   $('todayBox').classList.toggle('hidden', !fresh);
   if (fresh) {
     currency = s.shop?.currency || 'MAD';
     $('kTotal').textContent = money(today.total);
+    $('kDate').textContent = today.date !== localDayKey() ? '· ' + dayLabel(today.date) : '';
     $('kCount').innerHTML = `<bdi>${today.salesCount || 0}</bdi> ${tr('sales')}`;
     $('kDrawer').innerHTML = `${mh(s.cashInDrawers)} ${tr('drawer')}`;
     $('kCash').textContent = money(today.cash);
@@ -319,7 +321,8 @@ function render() {
         }).join('')
       : `<li class="empty">${tr('noClosed')}</li>`;
 
-    const isToday = (x) => { const d = toDate(x.at); return d && localDayKey(d) === localDayKey(); };
+    // الحاسوب كيصيفط غير حركات النهار ديالو: ما نفلتروش بساعة التيليفون
+    const isToday = () => true;
     const payName = (m) => (tr('pay.' + m) === 'pay.' + m ? '' : tr('pay.' + m));
     const recent = (s.recent || []).filter(isToday);
     if (Array.isArray(s.moves)) {
