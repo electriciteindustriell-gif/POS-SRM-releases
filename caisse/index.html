@@ -59,6 +59,10 @@
   .badge { font-size: 11.5px; border-radius: 6px; padding: 2px 6px; background: var(--bg); color: var(--muted); white-space: nowrap; }
   .badge.bad { background: var(--brand-soft); color: var(--bad); }
   .badge.ok { background: var(--ok-soft); color: var(--ok); }
+  .in { color: var(--ok); } .out { color: var(--bad); }
+  .mv { width: 26px; height: 26px; flex: none; border-radius: 50%; display: grid; place-items: center; font-weight: 800; }
+  .mv.in { background: var(--ok-soft); } .mv.out { background: var(--brand-soft); }
+  h2 small .in, h2 small .out { font-weight: 700; margin-inline-start: 6px; }
   .reg { border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; margin-top: 8px; }
   .reg .top { display: flex; justify-content: space-between; gap: 8px; font-weight: 700; }
   .reg .cash { font-size: 22px; font-weight: 800; direction: ltr; text-align: right; margin: 4px 0; }
@@ -151,7 +155,7 @@
 
         <div class="card"><h2><span data-i="openRegisters"></span></h2><div id="regs"></div></div>
         <div class="card"><h2><span data-i="closedToday"></span></h2><ul class="list" id="closed"></ul></div>
-        <div class="card"><h2><span data-i="recentSales"></span></h2><ul class="list" id="recent"></ul></div>
+        <div class="card"><h2><span data-i="moves"></span><small id="movesHead"></small></h2><ul class="list" id="recent"></ul></div>
         <div class="card"><h2><span data-i="topProducts"></span></h2><ul class="list" id="top"></ul></div>
         <div class="card"><h2><span data-i="lowStock"></span><small id="lowCount"></small></h2><ul class="list" id="low"></ul></div>
       </div>
@@ -191,7 +195,8 @@ const T = {
     login: 'دخول', forgot: 'نسيت كلمة السر؟', logout: 'خروج', tabToday: 'اليوم', tabHistory: 'الأيام اللي فاتت',
     noData: 'مازال ما وصلات حتى معلومة من الحاسوب. تأكد بلي المتابعة مفعّلة فالبرنامج (الإعدادات ← المتابعة عن بعد) وبلي الحاسوب فيه الأنترنت.',
     salesToday: 'مبيعات اليوم', cash: 'كاش', card: 'كارط', credit: 'كريدي', returns: 'المرجوعات', expenses: 'المصاريف', profit: 'الربح',
-    openRegisters: 'الصناديق المفتوحة', closedToday: 'الصناديق المسدودة اليوم', recentSales: 'آخر المبيعات', topProducts: 'الأكثر مبيعاً اليوم',
+    openRegisters: 'الصناديق المفتوحة', closedToday: 'الصناديق المسدودة اليوم', recentSales: 'آخر المبيعات', moves: 'حركات اليوم (دخل / خرج)', noMoves: 'حتى حركة اليوم',
+    mv: { sale: 'بيعة', return: 'إرجاع', refund: 'استرجاع', expense: 'مصروف', debtIn: 'خلاص كريدي', debtOut: 'خلاص مورّد', purchase: 'شراء سلعة' }, topProducts: 'الأكثر مبيعاً اليوم',
     lowStock: 'سلعة قربات تسالي', last30: 'آخر 30 يوم', sales: 'بيعة', drawer: 'فالصناديق', noOpen: 'حتى صندوق ما مفتوح دابا',
     noClosed: 'حتى صندوق ما تسدّ اليوم', noSales: 'حتى بيعة اليوم', noLow: 'كلشي متوفر 👍', noDays: 'مازال ما كاين تاريخ',
     expected: 'خاص يكون فالصندوق', openedAt: 'تحلّ', opening: 'البداية', diff: 'الفرق', exact: 'مضبوط',
@@ -207,7 +212,8 @@ const T = {
     login: 'Se connecter', forgot: 'Mot de passe oublié ?', logout: 'Quitter', tabToday: "Aujourd'hui", tabHistory: 'Jours précédents',
     noData: "Aucune donnée reçue du PC. Vérifiez que le suivi est activé dans le logiciel (Paramètres → Suivi à distance) et que le PC a Internet.",
     salesToday: "Ventes d'aujourd'hui", cash: 'Espèces', card: 'Carte', credit: 'Crédit', returns: 'Retours', expenses: 'Dépenses', profit: 'Bénéfice',
-    openRegisters: 'Caisses ouvertes', closedToday: "Caisses clôturées aujourd'hui", recentSales: 'Dernières ventes', topProducts: "Meilleures ventes du jour",
+    openRegisters: 'Caisses ouvertes', closedToday: "Caisses clôturées aujourd'hui", recentSales: 'Dernières ventes', moves: "Mouvements du jour (entrées / sorties)", noMoves: "Aucun mouvement aujourd'hui",
+    mv: { sale: 'Vente', return: 'Retour', refund: 'Remboursement', expense: 'Dépense', debtIn: 'Paiement crédit', debtOut: 'Paiement fournisseur', purchase: 'Achat' }, topProducts: "Meilleures ventes du jour",
     lowStock: 'Stock bas', last30: '30 derniers jours', sales: 'ventes', drawer: 'en caisse', noOpen: 'Aucune caisse ouverte',
     noClosed: "Aucune clôture aujourd'hui", noSales: "Aucune vente aujourd'hui", noLow: 'Tout est en stock 👍', noDays: "Pas encore d'historique",
     expected: 'Attendu en caisse', openedAt: 'Ouverte', opening: 'Fond', diff: 'Écart', exact: 'Juste',
@@ -313,8 +319,20 @@ function render() {
         }).join('')
       : `<li class="empty">${tr('noClosed')}</li>`;
 
-    const recent = (s.recent || []).filter((x) => { const d = toDate(x.at); return d && localDayKey(d) === localDayKey(); });
-    $('recent').innerHTML = recent.length
+    const isToday = (x) => { const d = toDate(x.at); return d && localDayKey(d) === localDayKey(); };
+    const payName = (m) => (tr('pay.' + m) === 'pay.' + m ? '' : tr('pay.' + m));
+    const recent = (s.recent || []).filter(isToday);
+    if (Array.isArray(s.moves)) {
+      // حركات الفلوس: دخل (+ أخضر) / خرج (− أحمر)
+      const moves = s.moves.filter(isToday);
+      const inSum = moves.filter((m) => m.amount > 0).reduce((a, m) => a + m.amount, 0);
+      const outSum = moves.filter((m) => m.amount < 0).reduce((a, m) => a - m.amount, 0);
+      $('movesHead').innerHTML = moves.length ? `<span class="in">+${mh(inSum)}</span> <span class="out">−${mh(outSum)}</span>` : '';
+      $('recent').innerHTML = moves.length
+        ? moves.map((m) => `<li><span class="mv ${m.amount < 0 ? 'out' : 'in'}">${m.amount < 0 ? '−' : '+'}</span><div class="main"><div class="name">${tr('mv.' + m.kind)}${m.label ? ' · ' + esc(m.label) : ''}</div>
+            <div class="meta">${timeOf(m.at)}${m.user ? ' · ' + esc(m.user) : ''}${payName(m.method) ? ' · ' + payName(m.method) : ''}</div></div><div class="amt ${m.amount < 0 ? 'out' : 'in'}">${mh(Math.abs(m.amount))}</div></li>`).join('')
+        : `<li class="empty">${tr('noMoves')}</li>`;
+    } else $('recent').innerHTML = recent.length
       ? recent.map((x) => `<li><div class="main"><div class="name">${esc(x.number)} ${x.isReturn ? `<span class="badge bad">${tr('returnTag')}</span>` : ''}${x.status === 'refunded' ? `<span class="badge bad">${tr('refunded')}</span>` : ''}</div>
           <div class="meta">${timeOf(x.at)} · ${esc(x.user)} · ${esc(tr('pay.' + x.method) === 'pay.' + x.method ? x.method : tr('pay.' + x.method))}</div></div><div class="amt">${mh(x.total)}</div></li>`).join('')
       : `<li class="empty">${tr('noSales')}</li>`;
