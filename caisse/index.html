@@ -1,0 +1,420 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>متابعة الصندوق</title>
+<meta name="theme-color" content="#c62828">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<style>
+  :root {
+    --bg: #f4f6f9; --card: #ffffff; --text: #17202e; --muted: #677489; --line: #e3e8ef;
+    --brand: #c62828; --brand-soft: #fdecec; --ok: #16834a; --ok-soft: #e6f6ec; --warn: #b26a00; --warn-soft: #fff4e0; --bad: #c62828;
+    --radius: 14px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg: #0f141b; --card: #18202b; --text: #e8edf4; --muted: #95a1b3; --line: #273243; --brand-soft: #3a1c1f; --ok-soft: #143323; --warn-soft: #3a2b12; }
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; background: var(--bg); color: var(--text); font-family: system-ui, -apple-system, 'Segoe UI', Tahoma, Arial, sans-serif; -webkit-tap-highlight-color: transparent; }
+  body { padding: env(safe-area-inset-top) 0 calc(24px + env(safe-area-inset-bottom)); }
+  .wrap { max-width: 640px; margin: 0 auto; padding: 0 16px; }
+  header { display: flex; align-items: center; gap: 10px; padding: 14px 0 10px; }
+  header img { width: 36px; height: 36px; border-radius: 9px; }
+  header .t { flex: 1; min-width: 0; }
+  header h1 { font-size: 18px; margin: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  header .sub { font-size: 12.5px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; direction: ltr; text-align: start; }
+  header .icon-btn { padding: 7px 9px; }
+  button { font: inherit; cursor: pointer; }
+  .icon-btn { border: 1px solid var(--line); background: var(--card); color: var(--text); border-radius: 10px; padding: 7px 10px; font-size: 13px; }
+  .status { display: flex; align-items: center; gap: 8px; border-radius: 12px; padding: 9px 12px; font-size: 13.5px; margin-bottom: 12px; }
+  .status.ok { background: var(--ok-soft); color: var(--ok); }
+  .status.warn { background: var(--warn-soft); color: var(--warn); }
+  .dot { width: 9px; height: 9px; border-radius: 50%; background: currentColor; flex: none; }
+  .status.ok .dot { animation: pulse 2s infinite; }
+  @keyframes pulse { 50% { opacity: .35; } }
+  .hero { background: var(--brand); color: #fff; border-radius: var(--radius); padding: 16px; margin-bottom: 12px; }
+  .hero .lbl { font-size: 13px; opacity: .85; }
+  .hero .big { font-size: 34px; font-weight: 800; letter-spacing: .3px; margin: 2px 0 8px; direction: ltr; text-align: right; }
+  .hero .row { display: flex; gap: 8px; flex-wrap: wrap; }
+  .pill { background: rgba(255,255,255,.16); border-radius: 999px; padding: 4px 10px; font-size: 12.5px; }
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px; }
+  .kpi { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); padding: 12px; min-width: 0; }
+  .kpi .lbl { font-size: 12.5px; color: var(--muted); }
+  .kpi .val { font-size: 20px; font-weight: 750; margin-top: 2px; direction: ltr; text-align: right; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .kpi.neg .val { color: var(--bad); }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); padding: 14px; margin-bottom: 12px; }
+  .card h2 { font-size: 15px; margin: 0 0 8px; display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+  .card h2 small { font-weight: 500; color: var(--muted); font-size: 12px; }
+  .list { list-style: none; margin: 0; padding: 0; }
+  .list li { display: flex; align-items: center; gap: 10px; padding: 9px 0; border-top: 1px solid var(--line); font-size: 14px; }
+  .list li:first-child { border-top: 0; }
+  .list .main { flex: 1; min-width: 0; }
+  .list .name { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .list .meta { font-size: 12px; color: var(--muted); }
+  .list .amt { font-weight: 700; direction: ltr; white-space: nowrap; }
+  .badge { font-size: 11.5px; border-radius: 6px; padding: 2px 6px; background: var(--bg); color: var(--muted); white-space: nowrap; }
+  .badge.bad { background: var(--brand-soft); color: var(--bad); }
+  .badge.ok { background: var(--ok-soft); color: var(--ok); }
+  .reg { border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; margin-top: 8px; }
+  .reg .top { display: flex; justify-content: space-between; gap: 8px; font-weight: 700; }
+  .reg .cash { font-size: 22px; font-weight: 800; direction: ltr; text-align: right; margin: 4px 0; }
+  .reg .meta { font-size: 12.5px; color: var(--muted); display: flex; flex-wrap: wrap; gap: 4px 12px; }
+  .empty { color: var(--muted); font-size: 13.5px; padding: 6px 0; }
+  .tabs { display: flex; gap: 6px; background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 4px; margin-bottom: 12px; }
+  .tabs button { flex: 1; border: 0; background: transparent; color: var(--muted); border-radius: 9px; padding: 8px; font-weight: 650; font-size: 14px; }
+  .tabs button.on { background: var(--brand); color: #fff; }
+  .day { cursor: pointer; }
+  .list .day-detail { display: none; padding: 4px 0 10px; border-top: 0; }
+  .list .day.open + .day-detail { display: block; }
+  .day .amt::after { content: ' ▾'; color: var(--muted); font-size: 11px; }
+  .kv { display: grid; grid-template-columns: 1fr auto; gap: 4px 12px; font-size: 13.5px; }
+  .kv span:nth-child(even) { direction: ltr; font-weight: 650; text-align: left; }
+  /* login */
+  .login { max-width: 400px; margin: 8vh auto 0; }
+  .login .card { padding: 20px; }
+  .login h1 { font-size: 21px; margin: 12px 0 4px; text-align: center; }
+  .login p { color: var(--muted); font-size: 14px; text-align: center; margin: 0 0 16px; }
+  .login .logo { display: block; width: 64px; height: 64px; margin: 0 auto; border-radius: 16px; }
+  label { display: block; font-size: 13.5px; font-weight: 650; margin: 10px 0 5px; }
+  input { width: 100%; font: inherit; font-size: 16px; padding: 11px 12px; border-radius: 10px; border: 1px solid var(--line); background: var(--bg); color: var(--text); direction: ltr; }
+  input:focus { outline: 2px solid var(--brand); outline-offset: 0; }
+  .btn { width: 100%; border: 0; background: var(--brand); color: #fff; font-weight: 750; font-size: 16px; padding: 12px; border-radius: 10px; margin-top: 16px; }
+  .btn:disabled { opacity: .6; }
+  .link { display: block; width: 100%; background: none; border: 0; color: var(--brand); margin-top: 12px; font-size: 14px; }
+  .msg { font-size: 13.5px; margin-top: 10px; text-align: center; min-height: 1em; }
+  .msg.err { color: var(--bad); } .msg.ok { color: var(--ok); }
+  .foot { text-align: center; color: var(--muted); font-size: 12px; margin-top: 18px; }
+  .hidden { display: none !important; }
+  .loading { text-align: center; color: var(--muted); padding: 40px 0; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- تسجيل الدخول -->
+  <section id="login" class="login hidden">
+    <div class="card">
+      <img class="logo" src="icon-192.png" alt="">
+      <h1 data-i="appName"></h1>
+      <p data-i="loginHint"></p>
+      <form id="loginForm" autocomplete="on">
+        <label for="email" data-i="email"></label>
+        <input id="email" type="email" autocomplete="username" required>
+        <label for="password" data-i="password"></label>
+        <input id="password" type="password" autocomplete="current-password" required minlength="6">
+        <button class="btn" id="loginBtn" type="submit" data-i="login"></button>
+      </form>
+      <button class="link" id="forgotBtn" type="button" data-i="forgot"></button>
+      <div class="msg" id="loginMsg"></div>
+    </div>
+    <div class="foot"><button class="icon-btn" data-lang-toggle></button></div>
+  </section>
+
+  <!-- لوحة المتابعة -->
+  <section id="app" class="hidden">
+    <header>
+      <img src="icon-192.png" alt="">
+      <div class="t"><h1 id="shopName">…</h1><div class="sub" id="userEmail"></div></div>
+      <button class="icon-btn" data-lang-toggle></button>
+      <button class="icon-btn" id="logoutBtn" data-i="logout"></button>
+    </header>
+    <div id="status" class="status warn"><span class="dot"></span><span id="statusText"></span></div>
+
+    <div class="tabs">
+      <button class="on" data-tab="today" data-i="tabToday"></button>
+      <button data-tab="history" data-i="tabHistory"></button>
+    </div>
+
+    <div id="tab-today">
+      <div id="noData" class="card empty hidden" data-i="noData"></div>
+      <div id="todayBox" class="hidden">
+        <div class="hero">
+          <div class="lbl" data-i="salesToday"></div>
+          <div class="big" id="kTotal">0</div>
+          <div class="row">
+            <span class="pill" id="kCount"></span>
+            <span class="pill" id="kDrawer"></span>
+          </div>
+        </div>
+        <div class="grid">
+          <div class="kpi"><div class="lbl" data-i="cash"></div><div class="val" id="kCash"></div></div>
+          <div class="kpi"><div class="lbl" data-i="card"></div><div class="val" id="kCard"></div></div>
+          <div class="kpi"><div class="lbl" data-i="credit"></div><div class="val" id="kCredit"></div></div>
+          <div class="kpi"><div class="lbl" data-i="returns"></div><div class="val" id="kReturns"></div></div>
+          <div class="kpi"><div class="lbl" data-i="expenses"></div><div class="val" id="kExpenses"></div></div>
+          <div class="kpi" id="kProfitBox"><div class="lbl" data-i="profit"></div><div class="val" id="kProfit"></div></div>
+        </div>
+
+        <div class="card"><h2><span data-i="openRegisters"></span></h2><div id="regs"></div></div>
+        <div class="card"><h2><span data-i="closedToday"></span></h2><ul class="list" id="closed"></ul></div>
+        <div class="card"><h2><span data-i="recentSales"></span></h2><ul class="list" id="recent"></ul></div>
+        <div class="card"><h2><span data-i="topProducts"></span></h2><ul class="list" id="top"></ul></div>
+        <div class="card"><h2><span data-i="lowStock"></span><small id="lowCount"></small></h2><ul class="list" id="low"></ul></div>
+      </div>
+    </div>
+
+    <div id="tab-history" class="hidden">
+      <div class="card"><h2><span data-i="last30"></span></h2><ul class="list" id="days"></ul></div>
+    </div>
+
+    <div class="foot" id="foot"></div>
+  </section>
+
+  <div id="boot" class="loading">…</div>
+</div>
+
+<script type="module">
+import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
+import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, sendPasswordResetEmail, signOut, setPersistence, browserLocalPersistence } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
+import { getFirestore, doc, onSnapshot, collection, query, orderBy, limit } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
+
+// هاد القيم ماشي سرية: الحماية كتجي من القواعد ديال Firestore (كل حساب كيشوف غير المحل ديالو)
+const app = initializeApp({
+  apiKey: 'AIzaSyCLmemsSvhDdvtgKEMgFe9Da_BzNroyReI',
+  authDomain: 'pos-srm-cloud.firebaseapp.com',
+  projectId: 'pos-srm-cloud',
+  storageBucket: 'pos-srm-cloud.firebasestorage.app',
+  messagingSenderId: '197776651772',
+  appId: '1:197776651772:web:9ea16d94da6f19b8686e79',
+});
+const auth = getAuth(app);
+const db = getFirestore(app);
+
+// ------------------------------------------------------------ اللغة
+const T = {
+  ar: {
+    appName: 'متابعة الصندوق', loginHint: 'دخل بالإيميل وكلمة السر اللي فعّلتي بيهم المتابعة فالبرنامج', email: 'الإيميل', password: 'كلمة السر',
+    login: 'دخول', forgot: 'نسيت كلمة السر؟', logout: 'خروج', tabToday: 'اليوم', tabHistory: 'الأيام اللي فاتت',
+    noData: 'مازال ما وصلات حتى معلومة من الحاسوب. تأكد بلي المتابعة مفعّلة فالبرنامج (الإعدادات ← المتابعة عن بعد) وبلي الحاسوب فيه الأنترنت.',
+    salesToday: 'مبيعات اليوم', cash: 'كاش', card: 'كارط', credit: 'كريدي', returns: 'المرجوعات', expenses: 'المصاريف', profit: 'الربح',
+    openRegisters: 'الصناديق المفتوحة', closedToday: 'الصناديق المسدودة اليوم', recentSales: 'آخر المبيعات', topProducts: 'الأكثر مبيعاً اليوم',
+    lowStock: 'سلعة قربات تسالي', last30: 'آخر 30 يوم', sales: 'بيعة', drawer: 'فالصناديق', noOpen: 'حتى صندوق ما مفتوح دابا',
+    noClosed: 'حتى صندوق ما تسدّ اليوم', noSales: 'حتى بيعة اليوم', noLow: 'كلشي متوفر 👍', noDays: 'مازال ما كاين تاريخ',
+    expected: 'خاص يكون فالصندوق', openedAt: 'تحلّ', opening: 'البداية', diff: 'الفرق', exact: 'مضبوط',
+    online: 'مباشر — آخر تحديث {t}', stale: 'آخر تحديث {t}: الحاسوب طافي ولا بلا أنترنت', never: 'كنتسنّاو المعلومات من الحاسوب…',
+    now: 'دابا', minAgo: 'قبل {n} دقيقة', hAgo: 'قبل {n} ساعة', dAgo: 'قبل {n} يوم', returnTag: 'إرجاع', refunded: 'مسترجع',
+    badLogin: 'الإيميل ولا كلمة السر غالطين', tooMany: 'بزاف ديال المحاولات، عاود من بعد شوية', netErr: 'ما كاينش الأنترنت',
+    resetSent: 'صيفطنا ليك إيميل باش تبدّل كلمة السر (شوف حتى Spam)', needEmail: 'كتب الإيميل ديالك الأول',
+    version: 'نسخة البرنامج', count: 'عدد', denied: 'ما عندكش الحق تشوف هاد المحل', langBtn: 'FR',
+    pay: { cash: 'كاش', card: 'كارط', credit: 'كريدي', mixed: 'مختلط' },
+  },
+  fr: {
+    appName: 'Suivi de caisse', loginHint: "Connectez-vous avec l'e-mail et le mot de passe utilisés pour activer le suivi dans le logiciel", email: 'E-mail', password: 'Mot de passe',
+    login: 'Se connecter', forgot: 'Mot de passe oublié ?', logout: 'Quitter', tabToday: "Aujourd'hui", tabHistory: 'Jours précédents',
+    noData: "Aucune donnée reçue du PC. Vérifiez que le suivi est activé dans le logiciel (Paramètres → Suivi à distance) et que le PC a Internet.",
+    salesToday: "Ventes d'aujourd'hui", cash: 'Espèces', card: 'Carte', credit: 'Crédit', returns: 'Retours', expenses: 'Dépenses', profit: 'Bénéfice',
+    openRegisters: 'Caisses ouvertes', closedToday: "Caisses clôturées aujourd'hui", recentSales: 'Dernières ventes', topProducts: "Meilleures ventes du jour",
+    lowStock: 'Stock bas', last30: '30 derniers jours', sales: 'ventes', drawer: 'en caisse', noOpen: 'Aucune caisse ouverte',
+    noClosed: "Aucune clôture aujourd'hui", noSales: "Aucune vente aujourd'hui", noLow: 'Tout est en stock 👍', noDays: "Pas encore d'historique",
+    expected: 'Attendu en caisse', openedAt: 'Ouverte', opening: 'Fond', diff: 'Écart', exact: 'Juste',
+    online: 'En direct — mis à jour {t}', stale: 'Mis à jour {t} : PC éteint ou sans Internet', never: 'En attente des données du PC…',
+    now: "à l'instant", minAgo: 'il y a {n} min', hAgo: 'il y a {n} h', dAgo: 'il y a {n} j', returnTag: 'Retour', refunded: 'Remboursée',
+    badLogin: 'E-mail ou mot de passe incorrect', tooMany: 'Trop de tentatives, réessayez plus tard', netErr: "Pas d'Internet",
+    resetSent: 'E-mail de réinitialisation envoyé (vérifiez aussi les spams)', needEmail: "Saisissez d'abord votre e-mail",
+    version: 'Version du logiciel', count: 'Nombre', denied: "Vous n'avez pas accès à ce magasin", langBtn: 'ع',
+    pay: { cash: 'Espèces', card: 'Carte', credit: 'Crédit', mixed: 'Mixte' },
+  },
+};
+let lang = (() => {
+  try {
+    const saved = localStorage.getItem('lang');
+    if (saved) return saved;
+  } catch {}
+  return (navigator.language || '').startsWith('fr') ? 'fr' : 'ar';
+})();
+if (!T[lang]) lang = 'ar';
+const tr = (k, vars = {}) => String(k.split('.').reduce((o, x) => o?.[x], T[lang]) ?? k).replace(/\{(\w+)\}/g, (_, v) => vars[v] ?? '');
+function applyLang() {
+  document.documentElement.lang = lang;
+  document.documentElement.dir = lang === 'ar' ? 'rtl' : 'ltr';
+  document.title = tr('appName');
+  document.querySelectorAll('[data-i]').forEach((el) => (el.textContent = tr(el.dataset.i)));
+  document.querySelectorAll('[data-lang-toggle]').forEach((el) => (el.textContent = tr('langBtn')));
+  render();
+}
+document.querySelectorAll('[data-lang-toggle]').forEach((el) => el.addEventListener('click', () => {
+  lang = lang === 'ar' ? 'fr' : 'ar';
+  try { localStorage.setItem('lang', lang); } catch {}
+  applyLang();
+}));
+
+// ------------------------------------------------------------ أدوات
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+let currency = 'MAD';
+const money = (n) => {
+  const v = Number(n) || 0;
+  return v.toLocaleString('fr-MA', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' ' + (currency === 'MAD' ? 'DH' : currency);
+};
+const mh = (n) => `<bdi dir="ltr">${money(n)}</bdi>`;
+const qty = (n) => (Number(n) || 0).toLocaleString('fr-MA', { maximumFractionDigits: 3 });
+const toDate = (v) => (v?.toDate ? v.toDate() : v ? new Date(v) : null);
+const timeOf = (v) => { const d = toDate(v); return d ? d.toLocaleTimeString(lang === 'ar' ? 'ar-MA' : 'fr-MA', { hour: '2-digit', minute: '2-digit' }) : ''; };
+function ago(d) {
+  const m = Math.floor((Date.now() - d.getTime()) / 60000);
+  if (m < 1) return tr('now');
+  if (m < 60) return tr('minAgo', { n: m });
+  if (m < 48 * 60) return tr('hAgo', { n: Math.floor(m / 60) });
+  return tr('dAgo', { n: Math.floor(m / 1440) });
+}
+const dayLabel = (key) => {
+  const d = new Date(key + 'T12:00:00');
+  return d.toLocaleDateString(lang === 'ar' ? 'ar-MA' : 'fr-FR', { weekday: 'long', day: 'numeric', month: 'long' });
+};
+const localDayKey = (d = new Date()) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+
+// ------------------------------------------------------------ الحالة
+let shop = null;      // الوثيقة الرئيسية
+let days = [];        // التاريخ
+let denied = false;
+let unsub = [];
+
+function render() {
+  if ($('app').classList.contains('hidden')) return;
+  renderStatus();
+  const s = shop;
+  $('shopName').textContent = s?.shop?.name || tr('appName');
+  const today = s?.today;
+  // ملخص ديال نهار آخر (الحاسوب ما صيفطش من البارح): ما نبيّنوش أرقام قديمة كأنها ديال اليوم
+  const fresh = today && today.date === localDayKey();
+  $('noData').classList.toggle('hidden', !!fresh);
+  $('noData').textContent = denied ? tr('denied') : tr('noData');
+  $('todayBox').classList.toggle('hidden', !fresh);
+  if (fresh) {
+    currency = s.shop?.currency || 'MAD';
+    $('kTotal').textContent = money(today.total);
+    $('kCount').innerHTML = `<bdi>${today.salesCount || 0}</bdi> ${tr('sales')}`;
+    $('kDrawer').innerHTML = `${mh(s.cashInDrawers)} ${tr('drawer')}`;
+    $('kCash').textContent = money(today.cash);
+    $('kCard').textContent = money(today.card);
+    $('kCredit').textContent = money(today.credit);
+    $('kReturns').textContent = `${money(today.returnsTotal)}`;
+    $('kExpenses').textContent = money(today.expenses);
+    $('kProfit').textContent = money(today.profit);
+    $('kProfitBox').classList.toggle('neg', (today.profit || 0) < 0);
+
+    const regs = s.registers || [];
+    $('regs').innerHTML = regs.length
+      ? regs.map((r) => `<div class="reg"><div class="top"><span>${esc(r.user)}</span><span class="badge">${tr('openedAt')} ${timeOf(r.openedAt)}</span></div>
+          <div class="meta">${tr('expected')}</div><div class="cash">${mh(r.expectedCash)}</div>
+          <div class="meta"><span>${tr('opening')}: ${mh(r.opening)}</span><span>${r.salesCount || 0} ${tr('sales')}: ${mh(r.sales)}</span><span>${tr('expenses')}: ${mh(r.expenses)}</span></div></div>`).join('')
+      : `<div class="empty">${tr('noOpen')}</div>`;
+
+    const closed = (today.registers || []).filter((r) => r.status === 'closed');
+    $('closed').innerHTML = closed.length
+      ? closed.map((r) => {
+          const d = Number(r.difference) || 0;
+          const tag = Math.abs(d) < 0.005 ? `<span class="badge ok">${tr('exact')}</span>` : `<span class="badge ${d < 0 ? 'bad' : ''}">${tr('diff')}: <bdi dir="ltr">${d > 0 ? '+' : ''}${money(d)}</bdi></span>`;
+          return `<li><div class="main"><div class="name">${esc(r.user)}</div><div class="meta">${mh(r.closing)}</div></div>${tag}</li>`;
+        }).join('')
+      : `<li class="empty">${tr('noClosed')}</li>`;
+
+    const recent = (s.recent || []).filter((x) => { const d = toDate(x.at); return d && localDayKey(d) === localDayKey(); });
+    $('recent').innerHTML = recent.length
+      ? recent.map((x) => `<li><div class="main"><div class="name">${esc(x.number)} ${x.isReturn ? `<span class="badge bad">${tr('returnTag')}</span>` : ''}${x.status === 'refunded' ? `<span class="badge bad">${tr('refunded')}</span>` : ''}</div>
+          <div class="meta">${timeOf(x.at)} · ${esc(x.user)} · ${esc(tr('pay.' + x.method) === 'pay.' + x.method ? x.method : tr('pay.' + x.method))}</div></div><div class="amt">${mh(x.total)}</div></li>`).join('')
+      : `<li class="empty">${tr('noSales')}</li>`;
+
+    const top = today.top || [];
+    $('top').innerHTML = top.length
+      ? top.map((p) => `<li><div class="main"><div class="name">${esc(p.name)}</div><div class="meta">${tr('count')}: ${qty(p.quantity)}</div></div><div class="amt">${mh(p.total)}</div></li>`).join('')
+      : `<li class="empty">${tr('noSales')}</li>`;
+  }
+  const low = s?.lowStock || [];
+  $('lowCount').textContent = s?.today?.lowStockCount ? String(s.today.lowStockCount) : '';
+  $('low').innerHTML = low.length
+    ? low.map((p) => `<li><div class="main"><div class="name">${esc(p.name)}</div></div><span class="badge ${p.stock <= 0 ? 'bad' : ''}">${qty(p.stock)} / ${qty(p.min)}</span></li>`).join('')
+    : `<li class="empty">${tr('noLow')}</li>`;
+
+  $('days').innerHTML = days.length
+    ? days.map((d) => `<li class="day" data-day="${esc(d.id)}"><div class="main"><div class="name">${esc(dayLabel(d.id))}</div><div class="meta">${d.salesCount || 0} ${tr('sales')}</div></div><div class="amt">${mh(d.total)}</div></li>
+        <li class="day-detail"><div class="kv">
+          <span>${tr('cash')}</span><span>${mh(d.cash)}</span><span>${tr('card')}</span><span>${mh(d.card)}</span><span>${tr('credit')}</span><span>${mh(d.credit)}</span>
+          <span>${tr('returns')}</span><span>${mh(d.returnsTotal)}</span><span>${tr('expenses')}</span><span>${mh(d.expenses)}</span><span>${tr('profit')}</span><span>${mh(d.profit)}</span>
+          ${(d.registers || []).filter((r) => r.status === 'closed').map((r) => `<span>${esc(r.user)} (${tr('diff')})</span><span>${mh(r.difference)}</span>`).join('')}
+        </div></li>`).join('')
+    : `<li class="empty">${tr('noDays')}</li>`;
+  $('foot').textContent = s?.version ? `${tr('version')}: v${s.version}` : '';
+}
+
+function renderStatus() {
+  const at = toDate(shop?.updatedAt);
+  const box = $('status');
+  if (!at) { box.className = 'status warn'; $('statusText').textContent = denied ? tr('denied') : tr('never'); return; }
+  // الحاسوب كيصيفط كل 5 دقايق ملي كتكون حركة، وعلى الأقل كل 30 دقيقة
+  const stale = Date.now() - at.getTime() > 40 * 60_000;
+  box.className = `status ${stale ? 'warn' : 'ok'}`;
+  $('statusText').textContent = tr(stale ? 'stale' : 'online', { t: ago(at) });
+}
+setInterval(renderStatus, 30_000);
+
+$('days').addEventListener('click', (e) => {
+  const li = e.target.closest('.day');
+  if (li) li.classList.toggle('open');
+});
+document.querySelectorAll('[data-tab]').forEach((b) => b.addEventListener('click', () => {
+  document.querySelectorAll('[data-tab]').forEach((x) => x.classList.toggle('on', x === b));
+  $('tab-today').classList.toggle('hidden', b.dataset.tab !== 'today');
+  $('tab-history').classList.toggle('hidden', b.dataset.tab !== 'history');
+}));
+
+// ------------------------------------------------------------ الدخول
+setPersistence(auth, browserLocalPersistence).catch(() => {});
+const loginMsg = (text, ok = false) => { $('loginMsg').textContent = text; $('loginMsg').className = `msg ${ok ? 'ok' : 'err'}`; };
+const authErr = (e) => {
+  const c = String(e?.code || '');
+  if (/invalid-credential|wrong-password|user-not-found|invalid-email|invalid-login/.test(c)) return tr('badLogin');
+  if (/too-many-requests/.test(c)) return tr('tooMany');
+  if (/network/.test(c)) return tr('netErr');
+  return c || String(e);
+};
+$('loginForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  $('loginBtn').disabled = true;
+  loginMsg('');
+  try {
+    await signInWithEmailAndPassword(auth, $('email').value.trim(), $('password').value);
+  } catch (err) {
+    loginMsg(authErr(err));
+  } finally {
+    $('loginBtn').disabled = false;
+  }
+});
+$('forgotBtn').addEventListener('click', async () => {
+  const email = $('email').value.trim();
+  if (!email) return loginMsg(tr('needEmail'));
+  try {
+    auth.languageCode = lang;
+    await sendPasswordResetEmail(auth, email);
+    loginMsg(tr('resetSent'), true);
+  } catch (err) {
+    // ما نقولوش واش الإيميل كاين ولا لا
+    if (/network|too-many/.test(String(err?.code))) loginMsg(authErr(err)); else loginMsg(tr('resetSent'), true);
+  }
+});
+$('logoutBtn').addEventListener('click', () => signOut(auth));
+
+onAuthStateChanged(auth, (user) => {
+  unsub.forEach((u) => u());
+  unsub = [];
+  shop = null; days = []; denied = false;
+  $('boot').classList.add('hidden');
+  $('login').classList.toggle('hidden', !!user);
+  $('app').classList.toggle('hidden', !user);
+  if (!user) { applyLang(); return; }
+  $('userEmail').textContent = user.email || '';
+  $('password').value = '';
+  const onErr = (err) => { console.error(err); if (err?.code === 'permission-denied') denied = true; render(); };
+  unsub.push(onSnapshot(doc(db, 'shops', user.uid), (snap) => { shop = snap.exists() ? snap.data() : null; render(); }, onErr));
+  unsub.push(onSnapshot(query(collection(db, 'shops', user.uid, 'days'), orderBy('date', 'desc'), limit(30)),
+    (qs) => { days = qs.docs.map((d) => ({ id: d.id, ...d.data() })); render(); }, onErr));
+  applyLang();
+});
+applyLang();
+</script>
+</body>
+</html>
