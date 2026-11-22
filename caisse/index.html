@@ -112,6 +112,37 @@
   body.masked .big, body.masked .val, body.masked .cash, body.masked .amt, body.masked .pill bdi, body.masked #debtTotal, body.masked .reg .meta bdi, body.masked .list .name bdi, body.masked .badge bdi { filter: blur(8px); }
   .search { width: 100%; margin: 2px 0 6px; font-size: 15px; padding: 9px 12px; direction: inherit; }
   .stale-copy { font-size: 12px; color: var(--muted); text-align: center; margin: -4px 0 10px; }
+  /* المحلات + التبويبات */
+  .chips { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 2px; margin-bottom: 10px; scrollbar-width: none; }
+  .chips::-webkit-scrollbar { display: none; }
+  .chips button { flex: none; border: 1px solid var(--line); background: var(--card); color: var(--text); border-radius: 999px; padding: 7px 13px; font-size: 13.5px; font-weight: 650; }
+  .chips button.on { background: var(--text); color: var(--bg); border-color: var(--text); }
+  .tabs { display: flex; gap: 6px; background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 4px; margin-bottom: 12px; }
+  .tabs button { flex: 1; border: 0; background: transparent; color: var(--muted); border-radius: 9px; padding: 8px; font-weight: 650; font-size: 14px; }
+  .tabs button.on { background: var(--brand); color: #fff; }
+  .muted { color: var(--muted) !important; font-weight: 500 !important; font-size: 12.5px !important; }
+  .site-row { cursor: pointer; }
+  .site-row .dotc { width: 8px; height: 8px; border-radius: 50%; flex: none; background: var(--ok); }
+  .site-row .dotc.warn { background: var(--warn); }
+  /* المنحنيات */
+  .chart { width: 100%; }
+  .chart svg { width: 100%; height: auto; display: block; }
+  .chart .bar { fill: var(--brand); opacity: .85; }
+  .chart .bar.today { opacity: 1; fill: var(--ok); }
+  .chart .axis { stroke: var(--line); }
+  .chart text { fill: var(--muted); font-size: 9px; font-family: inherit; }
+  .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 10px; }
+  .stats div { background: var(--bg); border-radius: 10px; padding: 8px; text-align: center; min-width: 0; }
+  .stats b { display: block; font-size: 12.5px; direction: ltr; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .stats span { font-size: 11.5px; color: var(--muted); }
+  .cmp { font-size: 12px; font-weight: 700; direction: ltr; unicode-bidi: isolate; }
+  .cmp.up { color: var(--ok); } .cmp.down { color: var(--bad); }
+  .yhead { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+  .ybig { font-size: 26px; font-weight: 800; direction: ltr; text-align: start; margin: 2px 0 6px; }
+  .kv { display: grid; grid-template-columns: 1fr auto; gap: 4px 12px; font-size: 13.5px; margin-top: 6px; }
+  .kv span:nth-child(even) { direction: ltr; font-weight: 650; text-align: left; }
+  .share-btn { width: 100%; margin-top: 12px; border: 1px solid var(--line); background: var(--bg); color: var(--text); border-radius: 10px; padding: 10px; font-weight: 700; }
+  body.masked .ybig, body.masked .kv span:nth-child(even), body.masked .stats b, body.masked .chart text.v, body.masked .site-row .amt { filter: blur(8px); }
   .loading { text-align: center; color: var(--muted); padding: 40px 0; }
 </style>
 </head>
@@ -151,6 +182,27 @@
     </button>
     <div class="sync-msg" id="syncMsg"></div>
     <div class="stale-copy hidden" id="copyNote"></div>
+    <div class="chips hidden" id="siteBar"></div>
+    <div class="tabs">
+      <button class="on" data-tab="today" data-i="tabToday"></button>
+      <button data-tab="reports" data-i="tabReports"></button>
+    </div>
+
+    <!-- التقارير: تقرير البارح + 30 يوم + 12 شهر (من وثيقة كل شهر: قراءة وحدة للشهر) -->
+    <div id="reportsBox" class="hidden">
+      <div class="card" id="yCard"></div>
+      <div class="card">
+        <h2><span data-i="last30"></span><small class="muted" id="sum30"></small></h2>
+        <div id="chart30" class="chart"></div>
+        <div class="stats" id="stats30"></div>
+      </div>
+      <div class="card">
+        <h2><span data-i="last12"></span></h2>
+        <div id="chart12" class="chart"></div>
+        <ul class="list" id="list12"></ul>
+      </div>
+      <div class="stale-copy" id="repNote"></div>
+    </div>
 
     <div id="noData" class="card empty hidden"></div>
     <div id="todayBox" class="hidden">
@@ -171,6 +223,7 @@
         <div class="kpi" id="kProfitBox"><div class="lbl" data-i="profit"></div><div class="val" id="kProfit"></div></div>
       </div>
 
+      <div class="card hidden" id="sitesCard"><h2><span data-i="shopsTitle"></span></h2><ul class="list" id="sitesList"></ul></div>
       <div class="card"><h2><span data-i="openRegisters"></span></h2><div id="regs"></div></div>
       <div class="card"><h2><span data-i="closedToday"></span></h2><ul class="list" id="closed"></ul></div>
       <div class="card"><h2><span data-i="debts"></span><small id="debtTotal"></small></h2><input id="debtSearch" class="search hidden" type="search" autocomplete="off"><ul class="list" id="debts"></ul><div class="note" id="debtNote"></div></div>
@@ -209,7 +262,7 @@
 <script type="module">
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
 import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, sendPasswordResetEmail, signOut, setPersistence, browserLocalPersistence } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
-import { getFirestore, doc, onSnapshot, setDoc, serverTimestamp, collection, getDocs, writeBatch } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
+import { getFirestore, doc, onSnapshot, setDoc, serverTimestamp, collection, getDocs, getDoc, writeBatch } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
 
 // هاد القيم ماشي سرية: الحماية كتجي من القواعد ديال Firestore (كل حساب كيشوف غير المحل ديالو)
 const app = initializeApp({
@@ -246,6 +299,11 @@ const T = {
     phoneOffline: 'التيليفون بلا أنترنت: هادي آخر أرقام وصلات {t}', fromCopy: 'كنحلّو آخر أرقام محفوظة… كنتسنّاو الجديد',
     searchDebt: 'قلّب على زبون…', lateCount: '{n} فات الأجل', noMatch: 'حتى زبون بهاد السمية',
     shareHead: 'ملخص الصندوق', shareDrawer: 'فالصناديق', shareClosed: 'إغلاق', shareDebts: 'الكريدي', shareUpdated: 'آخر تحديث',
+    allShops: 'كل المحلات', shopsTitle: 'المحلات', tabToday: 'اليوم', tabReports: 'التقارير', staleShort: 'ما تحدّثش',
+    last30: 'آخر 30 يوم', last12: 'آخر 12 شهر', yReport: 'تقرير البارح', noYesterday: 'البارح ما كانت حتى بيعة.',
+    vsWeek: 'مقارنة مع نفس النهار الأسبوع اللي فات', vsAvg: 'مقارنة مع المعدل ديال 7 أيام', total30: 'المجموع', avgDay: 'المعدل فالنهار', bestDay: 'أحسن نهار',
+    noHistory: 'التاريخ كيتجمع من النهار اللي تفعّلات فيه المتابعة (ولا من آخر 60 يوم ملي كيتحدّث البرنامج لـ 1.4).', needUpdate: 'التقارير كتحتاج نسخة 1.4 فالحاسوب ديال هاد المحل.',
+    loadingRep: 'كنجيبو التقارير…', shareReport: 'صيفط التقرير فواتساب', profitShort: 'ربح',
   },
   fr: {
     appName: 'Suivi de caisse', loginHint: "Connectez-vous avec l'e-mail et le mot de passe utilisés pour activer le suivi dans le logiciel", email: 'E-mail', password: 'Mot de passe',
@@ -268,6 +326,11 @@ const T = {
     phoneOffline: 'Téléphone sans Internet : derniers chiffres reçus {t}', fromCopy: 'Derniers chiffres enregistrés… en attente des nouveaux',
     searchDebt: 'Chercher un client…', lateCount: '{n} en retard', noMatch: 'Aucun client avec ce nom',
     shareHead: 'Résumé de caisse', shareDrawer: 'En caisse', shareClosed: 'Clôture', shareDebts: 'Crédits', shareUpdated: 'Mis à jour',
+    allShops: 'Tous les magasins', shopsTitle: 'Magasins', tabToday: "Aujourd'hui", tabReports: 'Rapports', staleShort: 'pas à jour',
+    last30: '30 derniers jours', last12: '12 derniers mois', yReport: "Rapport d'hier", noYesterday: "Aucune vente hier.",
+    vsWeek: 'Par rapport au même jour la semaine dernière', vsAvg: 'Par rapport à la moyenne sur 7 jours', total30: 'Total', avgDay: 'Moyenne / jour', bestDay: 'Meilleur jour',
+    noHistory: "L'historique se remplit depuis l'activation du suivi (ou les 60 derniers jours lors du passage à la version 1.4).", needUpdate: 'Les rapports nécessitent la version 1.4 sur le PC de ce magasin.',
+    loadingRep: 'Chargement des rapports…', shareReport: 'Envoyer le rapport par WhatsApp', profitShort: 'bénéfice',
   },
 };
 let lang = (() => {
@@ -316,30 +379,117 @@ const dayLabel = (key) => new Date(key + 'T12:00:00').toLocaleDateString(lang ==
 const localDayKey = (d = new Date()) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 
 // ------------------------------------------------------------ الحالة
-let shop = null;
+// المحلات: كل حاسوب كيكتب shops/{uid}/sites/{site}. الوثيقة القديمة shops/{uid} (نسخ 1.3) كتبان حتى هي
+let sites = {}; // site → data
+let legacy = null;
+let shop = null; // اللي كيبان دابا (محل واحد ولا «كل المحلات»)
 let denied = false;
-let unsub = null;
+let unsubs = [];
 let uid = null;
+let tab = 'today';
+let sel = (() => { try { return localStorage.getItem('site') || 'all'; } catch { return 'all'; } })();
 let fromCopy = false; // الأرقام من النسخة المحفوظة فالتيليفون (فتح سريع، ولا بلا أنترنت)
 let masked = (() => { try { return localStorage.getItem('mask') === '1'; } catch { return false; } })();
 document.body.classList.toggle('masked', masked);
 
+const updMs = (s) => toDate(s?.updatedAt)?.getTime() || 0;
+/** لائحة المحلات (القديمة غير إلا ما كاين حتى محل جديد، ولا تحدّثات فـ 3 أيام اللخرين) */
+function siteList() {
+  const list = Object.entries(sites).map(([id, data]) => ({ id, data }));
+  if (legacy && (!list.length || Date.now() - updMs(legacy) < 3 * 86400_000)) list.push({ id: '_old', data: legacy });
+  return list.sort((a, b) => String(a.data.shop?.name || '').localeCompare(String(b.data.shop?.name || '')));
+}
+const sumKeys = (arr, k) => arr.reduce((a, x) => a + (Number(x?.[k]) || 0), 0);
+/** «كل المحلات»: المجموع */
+function aggregate(list) {
+  const named = (s, arr) => (arr || []).map((x) => ({ ...x, user: `${x.user} · ${s.shop?.name || ''}` }));
+  const todays = list.map((x) => x.data.today).filter(Boolean);
+  const keys = ['total', 'salesCount', 'cash', 'card', 'credit', 'returnsTotal', 'expenses', 'profit'];
+  const today = todays.length ? Object.fromEntries(keys.map((k) => [k, sumKeys(todays, k)])) : null;
+  if (today) today.date = todays.map((t) => t.date).sort().pop();
+  const debtsList = list.flatMap((x) => (x.data.debts?.list || []).map((c) => ({ ...c, name: list.length > 1 ? `${c.name} · ${x.data.shop?.name || ''}` : c.name })));
+  return {
+    _all: true,
+    shop: { name: tr('allShops'), currency: list[0]?.data.shop?.currency || 'MAD' },
+    today,
+    registers: list.flatMap((x) => named(x.data, x.data.registers)),
+    closed: list.flatMap((x) => named(x.data, x.data.closed)),
+    cashInDrawers: sumKeys(list.map((x) => x.data), 'cashInDrawers'),
+    debts: { total: sumKeys(list.map((x) => x.data.debts), 'total'), count: sumKeys(list.map((x) => x.data.debts), 'count'), list: debtsList.sort((a, b) => b.amount - a.amount) },
+    // «كل المحلات» محدّثة غير إلا كاملين محدّثين: كناخدو الأقدم
+    updatedAt: new Date(Math.min(...list.map((x) => updMs(x.data)).filter(Boolean))),
+  };
+}
+function current() {
+  const list = siteList();
+  if (!list.length) return null;
+  if (list.length === 1) return list[0].data;
+  const one = list.find((x) => x.id === sel);
+  return one ? one.data : aggregate(list);
+}
+function pick(id) {
+  sel = id;
+  try { localStorage.setItem('site', id); } catch {}
+  repCache = null;
+  render();
+}
+
 // نسخة صغيرة من آخر أرقام فالتيليفون: التطبيق كيتحلّ فالحين، حتى بلا أنترنت
 const copyKey = (u) => 'shop:' + u;
 function saveCopy() {
-  if (!uid || !shop) return;
+  if (!uid || (!legacy && !Object.keys(sites).length)) return;
   try {
-    localStorage.setItem(copyKey(uid), JSON.stringify(shop, (k, v) =>
+    localStorage.setItem(copyKey(uid), JSON.stringify({ v: 2, sites, legacy }, (k, v) =>
       v && typeof v === 'object' && typeof v.seconds === 'number' && 'nanoseconds' in v ? new Date(v.seconds * 1000 + v.nanoseconds / 1e6).toISOString() : v));
   } catch {}
 }
 function loadCopy(u) {
-  try { return JSON.parse(localStorage.getItem(copyKey(u)) || 'null'); } catch { return null; }
+  try {
+    const c = JSON.parse(localStorage.getItem(copyKey(u)) || 'null');
+    if (!c) return null;
+    return c.v === 2 ? c : { sites: {}, legacy: c }; // النسخة القديمة ديال التطبيق
+  } catch { return null; }
 }
+
+function renderSites() {
+  const list = siteList();
+  $('siteBar').classList.toggle('hidden', list.length < 2);
+  const multi = list.length > 1;
+  const isAll = multi && !list.some((x) => x.id === sel);
+  if (multi) {
+    $('siteBar').innerHTML = [`<button data-site="all" class="${isAll ? 'on' : ''}">${tr('allShops')}</button>`]
+      .concat(list.map((x) => `<button data-site="${esc(x.id)}" class="${x.id === sel ? 'on' : ''}">${esc(x.data.shop?.name || x.id)}</button>`)).join('');
+  }
+  $('sitesCard').classList.toggle('hidden', !isAll);
+  if (isAll) {
+    $('sitesList').innerHTML = list.map((x) => {
+      const s = x.data, at = toDate(s.updatedAt), stale = !at || Date.now() - at.getTime() > 75 * 60_000;
+      currency = s.shop?.currency || 'MAD';
+      return `<li class="site-row" data-site="${esc(x.id)}"><span class="dotc ${stale ? 'warn' : ''}"></span><div class="main"><div class="name">${esc(s.shop?.name || x.id)}</div>
+        <div class="meta">${at ? ago(at) : ''}${stale ? ' · ' + tr('staleShort') : ''} · ${mh(s.cashInDrawers)} ${tr('drawer')}</div></div><div class="amt">${mh(s.today?.total)}</div></li>`;
+    }).join('');
+  }
+}
+$('siteBar').addEventListener('click', (e) => { const b = e.target.closest('[data-site]'); if (b) pick(b.dataset.site); });
+$('sitesList').addEventListener('click', (e) => { const b = e.target.closest('[data-site]'); if (b) pick(b.dataset.site); });
+document.querySelectorAll('[data-tab]').forEach((b) => b.addEventListener('click', () => {
+  tab = b.dataset.tab;
+  document.querySelectorAll('[data-tab]').forEach((x) => x.classList.toggle('on', x === b));
+  render();
+}));
 
 function render() {
   if ($('app').classList.contains('hidden')) return;
+  shop = current();
+  renderSites();
   renderStatus();
+  $('reportsBox').classList.toggle('hidden', tab !== 'reports');
+  if (tab === 'reports') {
+    $('noData').classList.add('hidden');
+    $('todayBox').classList.add('hidden');
+    $('shopName').textContent = shop?.shop?.name || tr('appName');
+    return void renderReports();
+  }
   const s = shop;
   $('shopName').textContent = s?.shop?.name || tr('appName');
   const today = s?.today;
@@ -428,7 +578,7 @@ $('syncBtn').addEventListener('click', async () => {
   $('syncBtn').disabled = true;
   $('syncBtn').classList.add('busy');
   $('syncMsg').textContent = tr('syncWait', { n: mins });
-  waiting = { before: toDate(shop?.updatedAt)?.getTime() || 0, timer: setTimeout(() => stopWaiting('syncNoAnswer'), mins * 60_000) };
+  waiting = { before: maxUpd(), timer: setTimeout(() => stopWaiting('syncNoAnswer'), mins * 60_000) };
   try {
     await setDoc(doc(db, 'shops', uid, 'ctl', 'request'), { at: serverTimestamp() });
   } catch (err) {
@@ -559,10 +709,17 @@ $('forgotBtn').addEventListener('click', async () => {
   }
 });
 
+const maxUpd = () => Math.max(0, updMs(legacy), ...Object.values(sites).map(updMs));
+function afterChange(fromCacheNow) {
+  fromCopy = fromCacheNow;
+  saveCopy();
+  if (waiting && maxUpd() > waiting.before) stopWaiting('syncDone');
+  render();
+}
 onAuthStateChanged(auth, (user) => {
-  if (unsub) unsub();
-  unsub = null;
-  shop = null; denied = false; uid = user?.uid || null;
+  unsubs.forEach((u) => u());
+  unsubs = [];
+  sites = {}; legacy = null; shop = null; denied = false; uid = user?.uid || null; repCache = null;
   stopWaiting();
   $('boot').classList.add('hidden');
   $('login').classList.toggle('hidden', !!user);
@@ -571,19 +728,136 @@ onAuthStateChanged(auth, (user) => {
   $('userEmail').textContent = user.email || '';
   $('password').value = '';
   const copy = loadCopy(user.uid);
-  if (copy) { shop = copy; fromCopy = true; }
-  // وثيقة وحدة فقط: قراءة غير ملي كتتبدّل (Firebase مجاني)
-  unsub = onSnapshot(doc(db, 'shops', user.uid), { includeMetadataChanges: true }, (snap) => {
+  if (copy) { sites = copy.sites || {}; legacy = copy.legacy || null; fromCopy = true; }
+  const onErr = (err) => { console.error(err); if (err?.code === 'permission-denied') denied = true; render(); };
+  // المحلات: قراءة غير ملي كتتبدّل شي وثيقة (Firebase مجاني)
+  unsubs.push(onSnapshot(collection(db, 'shops', user.uid, 'sites'), { includeMetadataChanges: true }, (qs) => {
     // بلا أنترنت: Firestore كيعطي غير اللي فالذاكرة ديالو (خاوي) — نخليو النسخة المحفوظة
-    if (snap.metadata.fromCache && !snap.exists() && shop) return render();
-    shop = snap.exists() ? snap.data() : null;
-    fromCopy = snap.metadata.fromCache;
-    saveCopy();
-    if (waiting && (toDate(shop?.updatedAt)?.getTime() || 0) > waiting.before) stopWaiting('syncDone');
-    render();
-  }, (err) => { console.error(err); if (err?.code === 'permission-denied') denied = true; render(); });
+    if (qs.metadata.fromCache && qs.empty && Object.keys(sites).length) return render();
+    sites = Object.fromEntries(qs.docs.map((d) => [d.id, d.data()]));
+    afterChange(qs.metadata.fromCache);
+  }, onErr));
+  unsubs.push(onSnapshot(doc(db, 'shops', user.uid), { includeMetadataChanges: true }, (snap) => {
+    if (snap.metadata.fromCache && !snap.exists() && legacy) return render();
+    legacy = snap.exists() ? snap.data() : null;
+    afterChange(snap.metadata.fromCache);
+  }, onErr));
   applyLang();
 });
+
+// ------------------------------------------------------------ التقارير
+// كل محل: وثيقة لكل شهر (shops/{uid}/sites/{site}/months/YYYY-MM) فيها سطر لكل نهار {t,n,c,k,cr,r,e,p}
+// الشهور اللي فاتو ما كيتبدّلوش: كيتحفظو فالتيليفون (قراءة وحدة فالعمر). الشهر الحالي واللي قبلو كيتقراو كل مرة.
+let repCache = null; // { key, days: {date: row}, months: {YYYY-MM: row} }
+let repLoading = false;
+const monthKey = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+const addRow = (a, b) => { const o = { ...a }; for (const k of ['t', 'n', 'c', 'k', 'cr', 'r', 'e', 'p']) o[k] = (Number(o[k]) || 0) + (Number(b?.[k]) || 0); return o; };
+async function loadMonth(site, m, fresh) {
+  const key = `m:${uid}:${site}:${m}`;
+  if (!fresh) { try { const c = localStorage.getItem(key); if (c) return JSON.parse(c); } catch {} }
+  const snap = await getDoc(doc(db, 'shops', uid, 'sites', site, 'months', m));
+  const days = snap.exists() ? snap.data().days || {} : {};
+  if (!fresh) { try { localStorage.setItem(key, JSON.stringify(days)); } catch {} }
+  return days;
+}
+async function loadReports() {
+  const all = siteList();
+  const list = all.filter((x) => x.id !== '_old'); // الوثيقة القديمة (1.3) ما فيهاش التاريخ
+  const isAll = all.length > 1 && !all.some((x) => x.id === sel);
+  const targets = all.length === 1 || isAll ? list : list.filter((x) => x.id === sel);
+  const key = targets.map((x) => x.id).join(',');
+  if (repCache?.key === key || repLoading) return;
+  if (!targets.length) { repCache = { key, days: {}, months: {}, none: true }; return render(); }
+  repLoading = true;
+  render();
+  const now = new Date();
+  const months = Array.from({ length: 12 }, (_, i) => monthKey(new Date(now.getFullYear(), now.getMonth() - i, 1)));
+  const days = {}, monthTotals = {};
+  try {
+    for (const t of targets) {
+      for (const [i, m] of months.entries()) {
+        const d = await loadMonth(t.id, m, i < 2); // الشهر الحالي واللي قبلو: ديما جداد
+        let mt = monthTotals[m] || {};
+        for (const [k, row] of Object.entries(d)) { days[k] = addRow(days[k] || {}, row); mt = addRow(mt, row); }
+        monthTotals[m] = mt;
+      }
+    }
+    repCache = { key, days, months: monthTotals };
+  } catch (e) {
+    console.error(e);
+    repCache = { key, days, months: monthTotals, error: true };
+  } finally {
+    repLoading = false;
+    render();
+  }
+}
+const pct = (a, b) => (b ? Math.round(((a - b) / b) * 100) : null);
+const cmpHtml = (v) => (v == null ? '—' : `<span class="cmp ${v >= 0 ? 'up' : 'down'}">${v >= 0 ? '▲' : '▼'} ${Math.abs(v)}%</span>`);
+function bars(values, labels, todayIdx) {
+  const W = 320, H = 120, pad = 14, n = values.length, max = Math.max(1, ...values), bw = (W - 4) / n;
+  const r = values.map((v, i) => {
+    const h = Math.max(v > 0 ? 2 : 0, ((H - pad - 8) * v) / max);
+    return `<rect class="bar ${i === todayIdx ? 'today' : ''}" x="${(2 + i * bw + bw * 0.12).toFixed(1)}" y="${(H - pad - h).toFixed(1)}" width="${(bw * 0.76).toFixed(1)}" height="${h.toFixed(1)}" rx="1.5"><title>${esc(labels[i])}: ${money(v)}</title></rect>`;
+  }).join('');
+  const lab = labels.map((l, i) => (i % Math.ceil(n / 6) === 0 || i === n - 1 ? `<text x="${(2 + i * bw + bw / 2).toFixed(1)}" y="${H - 2}" text-anchor="middle">${esc(l)}</text>` : '')).join('');
+  return `<svg viewBox="0 0 ${W} ${H}" role="img"><line class="axis" x1="0" x2="${W}" y1="${H - pad}" y2="${H - pad}"/>${r}${lab}<text class="v" x="${W - 2}" y="9" text-anchor="end">${esc(money(max))}</text></svg>`;
+}
+function renderReports() {
+  loadReports();
+  const c = repCache;
+  if (!c || repLoading) { $('yCard').innerHTML = `<div class="empty">${tr('loadingRep')}</div>`; $('chart30').innerHTML = ''; $('chart12').innerHTML = ''; $('stats30').innerHTML = ''; $('list12').innerHTML = ''; $('sum30').textContent = ''; $('repNote').textContent = ''; return; }
+  currency = shop?.shop?.currency || 'MAD';
+  // النهار ديال الحاسوب هو المرجع
+  const base = shop?.today?.date ? new Date(shop.today.date + 'T12:00:00') : new Date();
+  const key = (d) => localDayKey(d);
+  const back = (n) => { const d = new Date(base); d.setDate(d.getDate() - n); return d; };
+  const days = { ...c.days };
+  if (shop?.today) days[shop.today.date] = { t: shop.today.total, n: shop.today.salesCount, c: shop.today.cash, k: shop.today.card, cr: shop.today.credit, r: shop.today.returnsTotal, e: shop.today.expenses, p: shop.today.profit }; // اليوم: من الأرقام المباشرة
+  // تقرير البارح
+  const yk = key(back(1)), y = days[yk];
+  if (y && (y.n || y.t)) {
+    const wk = days[key(back(8))];
+    const avg7 = [2, 3, 4, 5, 6, 7, 8].map((i) => days[key(back(i))]?.t || 0).reduce((a, b) => a + b, 0) / 7;
+    $('yCard').innerHTML = `<div class="yhead"><h2 style="margin:0">${tr('yReport')}</h2><small class="muted">${esc(dayLabel(yk))}</small></div>
+      <div class="ybig">${mh(y.t)}</div>
+      <div class="kv"><span>${tr('sales')}</span><span><bdi>${y.n || 0}</bdi></span><span>${tr('cash')} · ${tr('card')} · ${tr('credit')}</span><span>${money(y.c)} · ${money(y.k)} · ${money(y.cr)}</span>
+      <span>${tr('expenses')}</span><span>${money(y.e)}</span><span>${tr('returns')}</span><span>${money(y.r)}</span><span>${tr('profit')}</span><span>${money(y.p)}</span>
+      <span>${tr('vsWeek')}</span><span>${cmpHtml(wk ? pct(y.t, wk.t) : null)}</span><span>${tr('vsAvg')}</span><span>${cmpHtml(avg7 ? pct(y.t, avg7) : null)}</span></div>
+      <button class="share-btn" id="shareY">📤 ${tr('shareReport')}</button>`;
+    $('shareY').onclick = () => {
+      const L = [`*${shop?.shop?.name || tr('appName')}* — ${tr('yReport')} ${dayLabel(yk)}`, `${tr('salesToday').split(' ')[0]}: ${money(y.t)} (${y.n || 0} ${tr('sales')})`,
+        `${tr('cash')}: ${money(y.c)} · ${tr('card')}: ${money(y.k)} · ${tr('credit')}: ${money(y.cr)}`, `${tr('expenses')}: ${money(y.e)} · ${tr('returns')}: ${money(y.r)} · ${tr('profit')}: ${money(y.p)}`];
+      if (wk) L.push(`${tr('vsWeek')}: ${pct(y.t, wk.t) >= 0 ? '+' : ''}${pct(y.t, wk.t)}%`);
+      window.open('https://wa.me/?text=' + encodeURIComponent(L.join('\n')), '_blank');
+    };
+  } else $('yCard').innerHTML = `<h2>${tr('yReport')}</h2><div class="empty">${c.none ? tr('needUpdate') : tr('noYesterday')}</div>`;
+  // 30 يوم
+  const d30 = Array.from({ length: 30 }, (_, i) => back(29 - i));
+  const v30 = d30.map((d) => days[key(d)]?.t || 0);
+  const tot = v30.reduce((a, b) => a + b, 0), active = v30.filter((v) => v > 0).length;
+  const bestI = v30.indexOf(Math.max(...v30));
+  $('chart30').innerHTML = bars(v30, d30.map((d) => String(d.getDate())), 29);
+  $('sum30').innerHTML = mh(tot);
+  $('stats30').innerHTML = `<div><b>${money(tot)}</b><span>${tr('total30')}</span></div><div><b>${money(active ? tot / active : 0)}</b><span>${tr('avgDay')}</span></div>
+    <div><b>${v30[bestI] ? money(v30[bestI]) : '—'}</b><span>${tr('bestDay')}${v30[bestI] ? ' · ' + esc(shortDate(d30[bestI])) : ''}</span></div>`;
+  // 12 شهر
+  const now = new Date(base);
+  const m12 = Array.from({ length: 12 }, (_, i) => new Date(now.getFullYear(), now.getMonth() - 11 + i, 1));
+  // الشهر الحالي: نبدّلو السطر ديال اليوم المحفوظ (قديم) بالأرقام المباشرة
+  const neg = (row) => Object.fromEntries(Object.entries(row || {}).map(([k, v]) => [k, -(Number(v) || 0)]));
+  const mt = (d) => {
+    const m = monthKey(d);
+    let r = c.months[m] || {};
+    const td = shop?.today?.date;
+    if (td?.startsWith(m)) r = addRow(addRow(r, neg(c.days[td])), days[td]);
+    return r;
+  };
+  const v12 = m12.map((d) => mt(d).t || 0);
+  const mName = (d, long) => d.toLocaleDateString(lang === 'ar' ? 'ar-MA' : 'fr-FR', long ? { month: 'long', year: 'numeric' } : { month: 'short' });
+  $('chart12').innerHTML = bars(v12, m12.map((d) => mName(d)), 11);
+  $('list12').innerHTML = m12.slice().reverse().filter((d) => mt(d).t).map((d) => { const r = mt(d); return `<li><div class="main"><div class="name">${esc(mName(d, true))}</div><div class="meta">${tr('profitShort')}: ${mh(r.p)} · <bdi>${r.n || 0}</bdi> ${tr('sales')}</div></div><div class="amt">${mh(r.t)}</div></li>`; }).join('');
+  $('repNote').textContent = c.none ? tr('needUpdate') : !Object.keys(c.days).length ? tr('noHistory') : '';
+}
 applyLang();
 </script>
 </body>
